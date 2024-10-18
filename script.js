@@ -10,6 +10,8 @@ renderer.setClearColor(0x87CEEB, 1);
 
 // Textures
 const grassTexture = new THREE.TextureLoader().load('textures/grass.png');
+const dirtTexture = new THREE.TextureLoader().load('textures/dirt.png');
+const stoneTexture = new THREE.TextureLoader().load('textures/stone.png');
 
 // Inventory
 const inventory = [];
@@ -39,9 +41,21 @@ function generateChunk(chunkX, chunkZ) {
     const chunk = new THREE.Group(); // Group to hold all blocks in this chunk
     for (let x = 0; x < chunkSize; x++) {
         for (let z = 0; z < chunkSize; z++) {
+            // Generate height based on Simplex noise
             const height = Math.floor(simplex.noise2D((chunkX * chunkSize + x) * noiseScale, (chunkZ * chunkSize + z) * noiseScale) * chunkHeight);
+
             for (let y = 0; y <= height; y++) {
-                const block = createBlock(chunkX * chunkSize + x, y, chunkZ * chunkSize + z, grassTexture);
+                let texture = grassTexture; // Default texture for the top block
+                if (y < height - 1) {
+                    texture = dirtTexture; // Dirt for blocks below the surface
+                }
+                if (y === height) {
+                    texture = grassTexture; // Grass on top
+                } else if (y < height - 1) {
+                    texture = stoneTexture; // Stone for below dirt
+                }
+                
+                const block = createBlock(chunkX * chunkSize + x, y, chunkZ * chunkSize + z, texture);
                 chunk.add(block);
             }
         }
