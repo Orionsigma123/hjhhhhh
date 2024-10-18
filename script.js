@@ -20,9 +20,9 @@ const worlds = {};
 // World settings
 const chunkSize = 16; // Size of each chunk
 const chunkHeight = 5; // Max height of blocks in a chunk
-const renderDistance = 4; // Number of chunks to render around the player
-const noiseScale = 0.1; // Adjust for terrain smoothness
-const simplex = new SimplexNoise();
+let renderDistance = 4; // Number of chunks to render around the player
+let noiseScale = 0.1; // Adjust for terrain smoothness
+let simplex = new SimplexNoise(); // Initialize SimplexNoise
 const chunks = {}; // Object to store generated chunks
 
 // Function to create a block
@@ -87,6 +87,9 @@ function makeNewWorld() {
 
     // Reset the inventory
     inventory.length = 0; // Clear the inventory
+
+    // Regenerate the noise generator with a new seed
+    simplex = new SimplexNoise(Math.random); // Create a new SimplexNoise instance
 
     // Regenerate the world
     updateChunks(); // Call to generate new chunks
