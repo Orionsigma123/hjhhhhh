@@ -27,6 +27,10 @@ let noiseScale = 0.1; // Adjust for terrain smoothness
 let simplex = new SimplexNoise(); // Initialize SimplexNoise
 const chunks = {}; // Object to store generated chunks
 
+// Crosshair settings
+const crosshairTexture = new THREE.TextureLoader().load('textures/crosshair.png'); // Load crosshair texture
+const crosshair = createCrosshair();
+
 // Function to create a block
 function createBlock(x, y, z, texture) {
     const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -34,6 +38,16 @@ function createBlock(x, y, z, texture) {
     const block = new THREE.Mesh(geometry, material);
     block.position.set(x, y, z);
     return block;
+}
+
+// Function to create crosshair
+function createCrosshair() {
+    const geometry = new THREE.PlaneGeometry(0.1, 0.1); // Crosshair size
+    const material = new THREE.MeshBasicMaterial({ map: crosshairTexture, transparent: true });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(0, 0, -1); // Position it in front of the camera
+    scene.add(mesh);
+    return mesh;
 }
 
 // Function to generate a chunk
@@ -191,12 +205,68 @@ function updatePlayer() {
     updateChunks();
 }
 
+// Block-breaking mechanics
+let isBreakingBlock = false;
+let breakingBlock = null;
+
+function startBreakingBlock() {
+    isBreakingBlock = true;
+}
+
+function stopBreakingBlock() {
+    if (breakingBlock) {
+        breakingBlock.material.opacity = 1; // Reset opacity before removing
+        scene.remove(breakingBlock); // Remove block from scene
+        inventory.push('block'); // Add block to inventory (placeholder)
+        breakingBlock = null; // Reset breaking block
+    }
+    isBreakingBlock = false;
+}
+
+function updateBreakingBlock() {
+    if (isBreakingBlock && breakingBlock) {
+        breakingBlock.material.opacity -= 0.05; // Fade the block
+        if (breakingBlock.material.opacity <= 0) {
+            stopBreakingBlock(); // Remove block if faded completely
+        }
+    } else {
+        // Raycast to find the block to break
+        const raycaster = new THREE.Raycaster();
+        const direction = new THREE.Vector3();
+        camera.getWorldDirection(direction);
+        raycaster.set(camera.position, direction);
+
+        const intersects = raycaster.intersectObjects(scene.children);
+        if (intersects.length > 0) {
+            const hit = intersects[0];
+            if (hit.object) {
+                breakingBlock = hit.object; // Store the block being broken
+                breakingBlock.material.opacity = 1; // Reset opacity
+            }
+        }
+    }
+}
+
 // Animation loop
 function animate() {
     requestAnimationFrame(animate);
     updatePlayer();
+    updateBreakingBlock();
     renderer.render(scene, camera);
 }
+
+// Event listeners for mouse controls
+document.addEventListener('mousedown', (event) => {
+    if (event.button === 0) { // Left mouse button
+        startBreakingBlock();
+    }
+});
+
+document.addEventListener('mouseup', (event) => {
+    if (event.button === 0) { // Left mouse button
+        stopBreakingBlock();
+    }
+});
 
 // Add event listener for the new world button
 document.getElementById('newWorldButton').addEventListener('click', makeNewWorld);
